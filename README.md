@@ -26,11 +26,11 @@ pip install -r requirements.txt
 
 #### 运行！
 ```shell
-python sfe_check_in.py [-h] -c "你的cookies值" 
+python sfe_check_in.py [-h] -u "注册SFE平台的QQ账号" -p "SFE平台的密码" 
 ```
 
 ## 模块化
-文件主体为`SFEAutoCheckIn`类，调用该类的`run`函数即可
+文件主体为`SFEAutoCheckIn`类，该类必要参数为`username`和`password`，调用该类的`run`函数即可
 
 ## 自动化
 建议配合[go-cqhttp](https://github.com/Mrs4s/go-cqhttp)与[APScheduler](https://github.com/agronholm/apscheduler)实现全自动签到
