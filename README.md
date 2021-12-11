@@ -28,3 +28,6 @@ pip install -r requirements.txt
 ```shell
 python sfe_check_in.py [-h] -c "你的cookies值" 
 ```
+
+## 模块化
+文件主体为`SFEAutoCheckIn`类，调用该类的`run`函数即可
