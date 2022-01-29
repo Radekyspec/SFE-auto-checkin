@@ -34,3 +34,4 @@ python sfe_check_in.py [-h] -u "注册SFE平台的QQ账号" -p "SFE平台的密�
 
 ## 自动化
 建议配合[go-cqhttp](https://github.com/Mrs4s/go-cqhttp)与[APScheduler](https://github.com/agronholm/apscheduler)实现全自动签到
+通过[BeautifulSoup](https://pypi.org/project/beautifulsoup4)库识别html元素，判定何时需要签到，准确率高，即使当次循环签到失败也不用担心~
