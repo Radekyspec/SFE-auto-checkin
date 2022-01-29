@@ -1,6 +1,8 @@
+from . import sfe_login
 from PIL import Image
 from io import BytesIO
 import requests
+import time
 import argparse
 
 
@@ -8,26 +10,7 @@ class SFEAutoCheckIn:
     def __init__(self, username, password):
         self.username = username
         self.password = password
-        self.login_headers = {
-            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-            "accept-encoding": "gzip, deflate, br",
-            "accept-language": "en-CN,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,en-GB;q=0.6,en-US;q=0.5",
-            "cache-control": "no-cache",
-            "content-type": "application/x-www-form-urlencoded",
-            "origin": "https://sfe.simpfun.cn",
-            "referer": "https://sfe.simpfun.cn/login.html",
-            "sec-ch-ua": '"Google Chrome";v="95", "Chromium";v="95", ";Not A Brand";v="99"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"',
-            "sec-fetch-dest": "document",
-            "sec-fetch-mode": "navigate",
-            "sec-fetch-site": "same-origin",
-            "sec-fetch-user": "?1",
-            "upgrade-insecure-requests": "1",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
-        }
-        raw_cookies = self.login()
-        self.cookies = raw_cookies.split(';')[0]
+        self.cookies = sfe_login.SFELogin(username, password).run()
         self.headers = {
             "accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
             "accept-encoding": "gzip, deflate, br",
@@ -43,27 +26,29 @@ class SFEAutoCheckIn:
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"
         }
 
-    def login(self):
-        """
-        登录模块
-        :return: (String) 使用账号密码登录获得cookies
-        """
-        url = "https://sfe.simpfun.cn/login-redirect.php"
-        payload = {
-            "QQ": self.username,
-            "pass": self.password,
-        }
-        resp = requests.post(url, data=payload, headers=self.login_headers)
-        return resp.headers["set-cookie"]
-
     def get_checkin_image(self):
         """
         获取原始captcha图片
         :return: (BytesIO) 服务器返回签到图片的字节流
         """
+        global php_session
         url = "https://sfe.simpfun.cn/sign_code/tncode.php"
         res = requests.get(url, headers=self.headers)
-        php_session = res.headers["set-cookie"].split(';')[0]
+        try:
+            php_session = res.headers["set-cookie"].split(';')[0]
+        except KeyError:
+            error_count = 0
+            while error_count <= 40:
+                print("Error when catching cookies, retrying...")
+                time.sleep(3)
+                error_count += 1
+                res = requests.get(url, headers=self.headers)
+                try:
+                    php_session = res.headers["set-cookie"].split(';')[0]
+                except KeyError:
+                    error_count += 1
+                else:
+                    break
         self.headers["cookie"] = self.cookies + "; " + php_session
         byte_stream = BytesIO(res.content)
         return byte_stream
@@ -87,7 +72,7 @@ class SFEAutoCheckIn:
         :return: (Int)缺口离滑块的距离
         """
         # 滑块的初始位置
-        distance = 50
+        distance = 55
         # 遍历像素点横坐标
         for i in range(distance, full_image.size[0]):
             # 遍历像素点纵坐标
@@ -111,7 +96,7 @@ class SFEAutoCheckIn:
         # 获取完整图片的像素点(按照RGB格式)
         full_pixel = fullbg_image.load()[x, y]
         # 设置一个判定值，像素值之差超过判定值则认为该像素不相同
-        threshold = 50
+        threshold = 55
         # 判断像素的各个颜色之差，abs()用于取绝对值
         if abs(bg_pixel[0] - full_pixel[0] < threshold) and abs(bg_pixel[1] - full_pixel[1] < threshold) and abs(
                 bg_pixel[2] - full_pixel[2] < threshold):
