@@ -1,4 +1,4 @@
-from . import sfe_login
+import sfe_login
 from PIL import Image
 from io import BytesIO
 import requests
